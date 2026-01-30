@@ -327,20 +327,23 @@ class DataBase():
             num = 0
             macs = []
             
-        
-            try:
-                NAME = "ble"
-                USER_HOME = Path(os.getenv("SUDO_USER") and f"/home/{os.getenv('SUDO_USER')}") or Path.home()
-                BASE_DIR = USER_HOME / "Documents" / "nsm_tools" / ".data" / f"{NAME}"
+            if False:
+                try:
+                    NAME = "bluehound"
+                    USER_HOME = Path(os.getenv("SUDO_USER") and f"/home/{os.getenv('SUDO_USER')}") or Path.home()
+                    BASE_DIR = USER_HOME / "Documents" / "nsm_tools" / f"{NAME}" / "gui"
 
-            except Exception as e:
-                BASE_DIR = Path.home() / "Documents" / "nsm_tools" / ".data" / f"{NAME}"
-            
-            BASE_DIR.mkdir(exist_ok=True, parents=True)
-            
+                except Exception as e:
+                    BASE_DIR = Path.home() / "Documents" / "nsm_tools" / f"{NAME}" / "gui"
+                
+                BASE_DIR.mkdir(exist_ok=True, parents=True)
+
+            path = str(Path(__file__).parent.parent / "database")
+            console.print(path)
+
             try:
 
-                drive = BASE_DIR / "war_drive.json"
+                drive = path / "database.json"
     
     
                 if drive.exists():
