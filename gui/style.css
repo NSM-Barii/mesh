@@ -5,15 +5,17 @@
 }
 
 :root {
-    --bg: #0f1419;
-    --surface: #1a1f2e;
-    --border: #2d3748;
+    --bg: #0a0e1a;
+    --surface: #0f1729;
+    --border: #1e3a5f;
     --text: #e2e8f0;
-    --text-dim: #94a3b8;
-    --primary: #3b82f6;
-    --close: #10b981;
-    --medium: #f59e0b;
-    --far: #ef4444;
+    --text-dim: #64748b;
+    --primary: #00d4ff;
+    --secondary: #7c3aed;
+    --close: #00ff88;
+    --medium: #fbbf24;
+    --far: #ff0055;
+    --accent-glow: rgba(0, 212, 255, 0.3);
 }
 
 body {
@@ -21,6 +23,8 @@ body {
     background: var(--bg);
     color: var(--text);
     line-height: 1.5;
+    background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 212, 255, 0.03) 2px, rgba(0, 212, 255, 0.03) 4px);
 }
 
 .app {
@@ -32,16 +36,65 @@ body {
 /* Header */
 .header {
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(90deg, var(--primary), var(--secondary), var(--primary)) 1;
     padding: 1rem 2rem;
     display: flex;
     align-items: center;
     gap: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
 }
 
 .logo h1 {
     font-size: 1.5rem;
     font-weight: 600;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.elapsed-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.time-label {
+    color: var(--text-dim);
+}
+
+.time-value {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.github-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.github-link:hover {
+    color: var(--text);
+    border-color: var(--primary);
+    background: rgba(59, 130, 246, 0.1);
 }
 
 .tabs {
@@ -66,9 +119,10 @@ body {
 }
 
 .tab.active {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-color: var(--primary);
     color: white;
+    box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .stats {
@@ -143,7 +197,7 @@ body {
     transform: translate(-50%, -50%);
     width: 50px;
     height: 50px;
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -151,7 +205,17 @@ body {
     font-weight: 700;
     font-size: 0.7rem;
     z-index: 10;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 4px var(--accent-glow), 0 0 20px var(--accent-glow);
+    animation: centerPulse 2s ease-in-out infinite;
+}
+
+@keyframes centerPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 4px var(--accent-glow), 0 0 20px var(--accent-glow);
+    }
+    50% {
+        box-shadow: 0 0 0 8px var(--accent-glow), 0 0 30px var(--accent-glow);
+    }
 }
 
 .radar-legend {
@@ -181,9 +245,11 @@ body {
 .devices-sidebar {
     width: 450px;
     background: var(--surface);
-    border-left: 1px solid var(--border);
+    border-left: 2px solid transparent;
+    border-image: linear-gradient(180deg, var(--primary), var(--secondary)) 1;
     display: flex;
     flex-direction: column;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-header {
@@ -209,6 +275,7 @@ body {
 .search-input:focus {
     outline: none;
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .device-list {
@@ -226,6 +293,7 @@ body {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
 }
 
 .device-card:hover {
@@ -236,6 +304,32 @@ body {
 .device-card.close { border-left-color: var(--close); }
 .device-card.medium { border-left-color: var(--medium); }
 .device-card.far { border-left-color: var(--far); }
+
+.device-card.moving::before {
+    content: 'MOVEMENT DETECTED';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--far);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    animation: flashRed 1s infinite;
+}
+
+@keyframes flashRed {
+    0%, 100% {
+        opacity: 1;
+        background: var(--far);
+    }
+    50% {
+        opacity: 0.5;
+        background: #ff6b6b;
+    }
+}
 
 .device-name {
     font-size: 1rem;
@@ -254,18 +348,22 @@ body {
 }
 
 .device-info-row {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 0.5rem;
+    align-items: start;
 }
 
 .device-label {
     color: var(--text-dim);
+    flex-shrink: 0;
 }
 
 .device-value {
     color: var(--text);
     font-family: 'Courier New', monospace;
-    word-break: break-all;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .device-distance {

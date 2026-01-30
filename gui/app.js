@@ -2,16 +2,29 @@ class BLEScanner {
     constructor() {
         this.devices = new Map();
         this.allDevices = new Set();
+        this.signalHistory = new Map();
         this.canvas = document.getElementById('radar-canvas');
         this.ctx = this.canvas.getContext('2d');
 
         this.TIMEOUT = 60;
         this.UPDATE_INTERVAL = 1000;
+        this.startTime = Date.now();
 
         this.initCanvas();
         this.initTabs();
         this.initSearch();
+        this.updateElapsedTime();
         this.start();
+    }
+
+    updateElapsedTime() {
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('elapsed-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }, 1000);
     }
 
     initCanvas() {
@@ -76,6 +89,27 @@ class BLEScanner {
         return age <= this.TIMEOUT;
     }
 
+    detectMovement(mac, rssi) {
+        if (!this.signalHistory.has(mac)) {
+            this.signalHistory.set(mac, []);
+        }
+
+        const history = this.signalHistory.get(mac);
+        history.push(rssi);
+
+        if (history.length > 10) history.shift();
+
+        if (history.length < 5) return false;
+
+        // Calculate variance
+        const mean = history.reduce((a, b) => a + b, 0) / history.length;
+        const variance = history.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / history.length;
+        const stdDev = Math.sqrt(variance);
+
+        // If standard deviation > 5, device is likely moving
+        return stdDev > 5;
+    }
+
     async update() {
         const data = await this.fetchDevices();
         const now = Date.now() / 1000;
@@ -92,6 +126,7 @@ class BLEScanner {
             if (this.isAlive(uptime)) {
                 const rssi = info.rssi || -100;
                 const distanceInfo = this.calculateDistance(rssi);
+                const isMoving = this.detectMovement(mac, rssi);
 
                 this.devices.set(mac, {
                     mac,
@@ -102,6 +137,7 @@ class BLEScanner {
                     uuid: Array.isArray(info.uuid) ? info.uuid.join(', ') : (info.uuid || 'None'),
                     uptime,
                     age: now - uptime,
+                    isMoving,
                     ...distanceInfo
                 });
             }
@@ -249,7 +285,7 @@ class BLEScanner {
         }
 
         list.innerHTML = devices.map((d, i) => `
-            <div class="device-card ${d.range}">
+            <div class="device-card ${d.range} ${d.isMoving ? 'moving' : ''}">
                 <div class="device-name">${i + 1}. ${this.escape(d.name)}</div>
                 <div class="device-info">
                     <div class="device-info-row">
