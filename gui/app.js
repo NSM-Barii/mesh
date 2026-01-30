@@ -113,14 +113,6 @@ class BLEScanner {
         return { range: 'far', meters: '>5m', distance: 6 };
     }
 
-    getManufacturerDisplay(manufacturer) {
-        // If manufacturer is known, show manufacturer name instead of "Unknown Device"
-        if (manufacturer && manufacturer !== 'Unknown') {
-            return `${manufacturer} Device`;
-        }
-        return 'Unknown Device';
-    }
-
     getManufacturerIcon(manufacturer) {
         const icons = {
             'Apple': '🍎',
@@ -227,11 +219,10 @@ class BLEScanner {
                 const isMoving = this.detectMovement(mac, rssi);
 
                 const manufacturer = info.manuf || 'Unknown';
-                const displayName = info.name || this.getManufacturerDisplay(manufacturer);
 
                 this.devices.set(mac, {
                     mac,
-                    name: displayName,
+                    name: info.name || 'Unknown Device',
                     manufacturer,
                     vendor: info.vendor || 'Unknown',
                     rssi,
@@ -239,7 +230,6 @@ class BLEScanner {
                     uptime,
                     age: now - uptime,
                     isMoving,
-                    hasIcon: !info.name && manufacturer !== 'Unknown',
                     ...distanceInfo
                 });
             }
