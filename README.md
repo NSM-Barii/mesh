@@ -1,6 +1,6 @@
-# BLE Mesh Scanner
+# Bluehound
 
-A Bluetooth Low Energy (BLE) scanner and wardriving tool with real-time web visualization.
+A Bluetooth Low Energy (BLE) wardriving tool with real-time web visualization.
 
 ## Features
 
@@ -13,8 +13,8 @@ A Bluetooth Low Energy (BLE) scanner and wardriving tool with real-time web visu
 
 ```bash
 # Clone the repository
-git clone https://github.com/nsm-barii/mesh.git
-cd mesh/src
+git clone https://github.com/nsm-barii/bluehound.git
+cd bluehound/src
 
 # Create virtual environment
 python3 -m venv venv
