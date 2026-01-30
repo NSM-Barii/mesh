@@ -1,8 +1,38 @@
+class KalmanFilter {
+    constructor(R = 0.008, Q = 4) {
+        this.R = R; // Process noise (low = trust predictions more)
+        this.Q = Q; // Measurement noise (higher = more signal variance)
+        this.P = 1; // Estimation error covariance
+        this.K = 0; // Kalman gain
+        this.x = null; // Current state estimate
+    }
+
+    filter(measurement) {
+        if (this.x === null) {
+            // First measurement - initialize state
+            this.x = measurement;
+            return measurement;
+        }
+
+        // Prediction
+        const x_pred = this.x;
+        const P_pred = this.P + this.R;
+
+        // Update
+        this.K = P_pred / (P_pred + this.Q);
+        this.x = x_pred + this.K * (measurement - x_pred);
+        this.P = (1 - this.K) * P_pred;
+
+        return this.x;
+    }
+}
+
 class BLEScanner {
     constructor() {
         this.devices = new Map();
         this.allDevices = new Set();
         this.signalHistory = new Map();
+        this.kalmanFilters = new Map();
         this.canvas = document.getElementById('radar-canvas');
         this.ctx = this.canvas.getContext('2d');
 
@@ -83,6 +113,38 @@ class BLEScanner {
         return { range: 'far', meters: '>5m', distance: 6 };
     }
 
+    getManufacturerDisplay(manufacturer) {
+        // If manufacturer is known, show manufacturer name instead of "Unknown Device"
+        if (manufacturer && manufacturer !== 'Unknown') {
+            return `${manufacturer} Device`;
+        }
+        return 'Unknown Device';
+    }
+
+    getManufacturerIcon(manufacturer) {
+        const icons = {
+            'Apple': '🍎',
+            'Microsoft': '🪟',
+            'Google': '🔵',
+            'Samsung': '📱',
+            'Intel': '💻',
+            'Amazon': '📦',
+            'Sony': '🎮',
+            'LG': '📺',
+            'Huawei': '📡',
+            'Xiaomi': '⚡',
+            'Dell': '💻',
+            'HP': '🖨️',
+            'Lenovo': '💼',
+            'Cisco': '🌐',
+            'Nvidia': '🎮',
+            'Broadcom': '📡',
+            'Qualcomm': '📶'
+        };
+
+        return icons[manufacturer] || null;
+    }
+
     isAlive(uptime) {
         const now = Date.now() / 1000;
         const age = now - uptime;
@@ -90,24 +152,60 @@ class BLEScanner {
     }
 
     detectMovement(mac, rssi) {
+        // Create Kalman filter for this device if it doesn't exist
+        if (!this.kalmanFilters.has(mac)) {
+            this.kalmanFilters.set(mac, new KalmanFilter(0.008, 4));
+        }
+
+        // Filter the RSSI value
+        const kalman = this.kalmanFilters.get(mac);
+        const filteredRSSI = kalman.filter(rssi);
+
+        // Store both raw and filtered history
         if (!this.signalHistory.has(mac)) {
-            this.signalHistory.set(mac, []);
+            this.signalHistory.set(mac, {
+                raw: [],
+                filtered: [],
+                timestamps: []
+            });
         }
 
         const history = this.signalHistory.get(mac);
-        history.push(rssi);
+        const now = Date.now();
 
-        if (history.length > 10) history.shift();
+        history.raw.push(rssi);
+        history.filtered.push(filteredRSSI);
+        history.timestamps.push(now);
 
-        if (history.length < 5) return false;
+        // Keep last 15 samples (15 seconds with 1s updates)
+        if (history.raw.length > 15) {
+            history.raw.shift();
+            history.filtered.shift();
+            history.timestamps.shift();
+        }
 
-        // Calculate variance
-        const mean = history.reduce((a, b) => a + b, 0) / history.length;
-        const variance = history.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / history.length;
+        // Need at least 8 samples for reliable detection
+        if (history.filtered.length < 8) return false;
+
+        // Calculate variance on filtered values
+        const mean = history.filtered.reduce((a, b) => a + b, 0) / history.filtered.length;
+        const variance = history.filtered.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / history.filtered.length;
         const stdDev = Math.sqrt(variance);
 
-        // If standard deviation > 5, device is likely moving
-        return stdDev > 5;
+        // Calculate rate of change (derivative approximation)
+        const recentValues = history.filtered.slice(-5);
+        const recentChanges = [];
+        for (let i = 1; i < recentValues.length; i++) {
+            recentChanges.push(Math.abs(recentValues[i] - recentValues[i - 1]));
+        }
+        const avgChange = recentChanges.reduce((a, b) => a + b, 0) / recentChanges.length;
+
+        // Movement detection criteria:
+        // 1. Standard deviation > 3 (reduced from 5 due to Kalman filtering)
+        // 2. Average rate of change > 1.5 dBm/second
+        const isMoving = stdDev > 3 || avgChange > 1.5;
+
+        return isMoving;
     }
 
     async update() {
@@ -128,16 +226,20 @@ class BLEScanner {
                 const distanceInfo = this.calculateDistance(rssi);
                 const isMoving = this.detectMovement(mac, rssi);
 
+                const manufacturer = info.manuf || 'Unknown';
+                const displayName = info.name || this.getManufacturerDisplay(manufacturer);
+
                 this.devices.set(mac, {
                     mac,
-                    name: info.name || 'Unknown Device',
-                    manufacturer: info.manuf || 'Unknown',
+                    name: displayName,
+                    manufacturer,
                     vendor: info.vendor || 'Unknown',
                     rssi,
                     uuid: Array.isArray(info.uuid) ? info.uuid.join(', ') : (info.uuid || 'None'),
                     uptime,
                     age: now - uptime,
                     isMoving,
+                    hasIcon: !info.name && manufacturer !== 'Unknown',
                     ...distanceInfo
                 });
             }
@@ -284,26 +386,31 @@ class BLEScanner {
             return;
         }
 
-        list.innerHTML = devices.map((d, i) => `
-            <div class="device-card ${d.range} ${d.isMoving ? 'moving' : ''}">
-                <div class="device-name">${i + 1}. ${this.escape(d.name)}</div>
-                <div class="device-info">
-                    <div class="device-info-row">
-                        <span class="device-label">MAC:</span>
-                        <span class="device-value">${d.mac}</span>
+        list.innerHTML = devices.map((d, i) => {
+            const icon = this.getManufacturerIcon(d.manufacturer);
+            const iconHtml = icon ? `<span class="manufacturer-icon">${icon}</span>` : '';
+
+            return `
+                <div class="device-card ${d.range} ${d.isMoving ? 'moving' : ''}">
+                    <div class="device-name">${i + 1}. ${iconHtml}${this.escape(d.name)}</div>
+                    <div class="device-info">
+                        <div class="device-info-row">
+                            <span class="device-label">MAC:</span>
+                            <span class="device-value">${d.mac}</span>
+                        </div>
+                        <div class="device-info-row">
+                            <span class="device-label">Manufacturer:</span>
+                            <span class="device-value">${this.escape(d.manufacturer)}</span>
+                        </div>
+                        <div class="device-info-row">
+                            <span class="device-label">RSSI:</span>
+                            <span class="device-value">${d.rssi} dBm</span>
+                        </div>
                     </div>
-                    <div class="device-info-row">
-                        <span class="device-label">Manufacturer:</span>
-                        <span class="device-value">${this.escape(d.manufacturer)}</span>
-                    </div>
-                    <div class="device-info-row">
-                        <span class="device-label">RSSI:</span>
-                        <span class="device-value">${d.rssi} dBm</span>
-                    </div>
+                    <div class="device-distance ${d.range}">${d.meters}</div>
                 </div>
-                <div class="device-distance ${d.range}">${d.meters}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     renderTable() {
@@ -325,19 +432,24 @@ class BLEScanner {
             return;
         }
 
-        tbody.innerHTML = devices.map((d, i) => `
-            <tr>
-                <td>${i + 1}</td>
-                <td>${this.escape(d.name)}</td>
-                <td class="mac-address">${d.mac}</td>
-                <td>${this.escape(d.manufacturer)}</td>
-                <td>${this.escape(d.vendor)}</td>
-                <td>${d.rssi} dBm</td>
-                <td><span class="distance-badge ${d.range}">${d.meters}</span></td>
-                <td>${d.age.toFixed(1)}s ago</td>
-                <td class="uuid-list">${d.uuid}</td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = devices.map((d, i) => {
+            const icon = this.getManufacturerIcon(d.manufacturer);
+            const iconHtml = icon ? `<span class="manufacturer-icon">${icon}</span> ` : '';
+
+            return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${iconHtml}${this.escape(d.name)}</td>
+                    <td class="mac-address">${d.mac}</td>
+                    <td>${this.escape(d.manufacturer)}</td>
+                    <td>${this.escape(d.vendor)}</td>
+                    <td>${d.rssi} dBm</td>
+                    <td><span class="distance-badge ${d.range}">${d.meters}</span></td>
+                    <td>${d.age.toFixed(1)}s ago</td>
+                    <td class="uuid-list">${d.uuid}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     escape(text) {
