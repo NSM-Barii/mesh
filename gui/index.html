@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLUEMAP</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1><span class="glitch" data-text="BLUEMAP">BLUEMAP</span></h1>
+                <p class="developer-tag">Developed by NSM Barii</p>
+                <div class="nav-tabs">
+                    <button class="nav-tab active" data-tab="dashboard">DASHBOARD</button>
+                    <button class="nav-tab" data-tab="wardriving">WARDRIVING DATA</button>
+                </div>
+                <div class="status-bar">
+                    <span class="status-indicator" id="connection-status">
+                        <span class="status-dot"></span> SCANNING
+                    </span>
+                    <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">◐</button>
+                    <span class="timestamp" id="timestamp"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard-tab">
+
+        <div class="main-grid">
+            <!-- Left Panel: Device List -->
+            <div class="panel device-panel">
+                <div class="panel-header">
+                    <h2>DETECTED DEVICES</h2>
+                    <span class="device-count" id="device-count">0</span>
+                </div>
+                <div class="device-list" id="device-list">
+                    <!-- Devices will be populated here -->
+                </div>
+            </div>
+
+            <!-- Center Panel: Proximity Visualization -->
+            <div class="panel visualization-panel">
+                <div class="panel-header">
+                    <h2>PROXIMITY ZONES</h2>
+                </div>
+                <div class="radar-container">
+                    <canvas id="radar-canvas"></canvas>
+                    <div class="zone-labels">
+                        <div class="zone-label immediate">IMMEDIATE</div>
+                        <div class="zone-label near">NEAR</div>
+                        <div class="zone-label far">FAR</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Analytics -->
+            <div class="panel analytics-panel">
+                <div class="panel-header">
+                    <h2>ANALYTICS</h2>
+                </div>
+                <div class="analytics-content">
+                    <div class="stat-box">
+                        <div class="stat-label">TOTAL DEVICES</div>
+                        <div class="stat-value" id="total-devices">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">SESSION UPTIME</div>
+                        <div class="stat-value" id="uptime" style="font-size: 1.5rem;">00:00:00</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">SCAN RATE</div>
+                        <div class="stat-value" id="scan-rate">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">IMMEDIATE ZONE</div>
+                        <div class="stat-value immediate-color" id="immediate-count">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">NEAR ZONE</div>
+                        <div class="stat-value near-color" id="near-count">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">FAR ZONE</div>
+                        <div class="stat-value far-color" id="far-count">0</div>
+                    </div>
+
+                    <div class="signal-strength-chart" id="signal-chart">
+                        <h3>DEVICE TIMELINE</h3>
+                        <canvas id="timeline-canvas"></canvas>
+                    </div>
+
+                    <div class="signal-strength-chart" id="histogram-chart">
+                        <h3>RSSI DISTRIBUTION</h3>
+                        <canvas id="histogram-canvas"></canvas>
+                    </div>
+
+                    <div class="signal-strength-chart" id="signal-chart-selected">
+                        <h3>SIGNAL HISTORY (CLICK DEVICE)</h3>
+                        <canvas id="history-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+        <!-- Bottom Panel: Movement Detection -->
+        <div class="panel movement-panel">
+            <div class="panel-header">
+                <h2>MOVEMENT DETECTION</h2>
+            </div>
+            <div class="movement-grid" id="movement-grid">
+                <!-- Movement indicators will be populated here -->
+            </div>
+        </div>
+
+        </div>
+
+        <!-- Wardriving Tab -->
+        <div class="tab-content" id="wardriving-tab">
+            <div class="wardriving-container">
+                <div class="panel wardriving-panel">
+                    <div class="panel-header">
+                        <h2>CAPTURED DEVICES</h2>
+                        <div class="wardriving-stats">
+                            <span class="stat-badge" id="total-captured">0 DEVICES</span>
+                            <button class="export-btn" id="export-btn">EXPORT DATA</button>
+                        </div>
+                    </div>
+                    <div class="wardriving-filters">
+                        <input type="text" id="search-filter" placeholder="SEARCH MAC, NAME, VENDOR..." class="filter-input">
+                        <select id="manufacturer-filter" class="filter-select">
+                            <option value="all">ALL MANUFACTURERS</option>
+                        </select>
+                    </div>
+                    <div class="wardriving-table-container">
+                        <table class="wardriving-table" id="wardriving-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ICON</th>
+                                    <th>RSSI</th>
+                                    <th>MAC ADDRESS</th>
+                                    <th>MANUFACTURER</th>
+                                    <th>VENDOR</th>
+                                    <th>LOCAL NAME</th>
+                                    <th>UUID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wardriving-tbody">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="icons.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
