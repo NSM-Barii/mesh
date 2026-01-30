@@ -338,8 +338,8 @@ class DataBase():
                 
                 BASE_DIR.mkdir(exist_ok=True, parents=True)
 
-            path = str(Path(__file__).parent.parent / "database")
-            console.print(path)
+            path = Path(__file__).parent.parent / "database" 
+            #console.print(path)
 
             try:
 
