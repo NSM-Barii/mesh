@@ -2,6 +2,8 @@
 
 A Bluetooth Low Energy (BLE) wardriving tool with real-time web visualization.
 
+This program is a branch off of my IoT hacking framework [BLE](https://github.com/nsm-barii/ble).
+
 ## Features
 
 - **Persistent JSON Database** - Stores all discovered devices across sessions
