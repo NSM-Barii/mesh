@@ -520,6 +520,14 @@ body {
     background: var(--primary);
 }
 
+/* Manufacturer Icon */
+.manufacturer-icon {
+    font-size: 1.2em;
+    margin-right: 0.35rem;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 /* Empty state */
 .empty-state {
     text-align: center;
