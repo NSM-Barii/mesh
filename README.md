@@ -13,6 +13,23 @@ This program is a branch off of my IoT hacking framework [BLE](https://github.co
 
 ## Installation
 
+### Install BlueZ Driver
+
+**Debian/Ubuntu:**
+```bash
+sudo apt-get update
+sudo apt-get install bluez
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S bluez bluez-utils
+sudo systemctl start bluetooth
+sudo systemctl enable bluetooth
+```
+
+### Install Bluehound
+
 ```bash
 # Clone the repository
 git clone https://github.com/nsm-barii/bluehound.git
