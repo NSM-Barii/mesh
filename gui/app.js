@@ -36,7 +36,7 @@ class BLEScanner {
         this.canvas = document.getElementById('radar-canvas');
         this.ctx = this.canvas.getContext('2d');
 
-        this.TIMEOUT = 5;
+        this.TIMEOUT = 10;
         this.UPDATE_INTERVAL = 1000;
         this.startTime = Date.now();
 
