@@ -4,3 +4,4 @@ pathlib
 manuf
 mac-vendor-lookup
 gtts
+requests
