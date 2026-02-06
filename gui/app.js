@@ -36,14 +36,19 @@ class BLEScanner {
         this.canvas = document.getElementById('radar-canvas');
         this.ctx = this.canvas.getContext('2d');
 
-        this.TIMEOUT = 60;
+        this.TIMEOUT = 10;
         this.UPDATE_INTERVAL = 1000;
         this.startTime = Date.now();
+
+        this.sweepAngle = 0;
+        this.lastSweepTime = performance.now();
+        this.SWEEP_DURATION = 4000; // full rotation in ms
 
         this.initCanvas();
         this.initTabs();
         this.initSearch();
         this.updateElapsedTime();
+        this.startRadarLoop();
         this.start();
     }
 
@@ -63,6 +68,18 @@ class BLEScanner {
         this.canvas.width = size;
         this.canvas.height = size;
         window.addEventListener('resize', () => this.initCanvas());
+    }
+
+    startRadarLoop() {
+        const loop = (now) => {
+            const delta = now - this.lastSweepTime;
+            this.lastSweepTime = now;
+            this.sweepAngle += (delta / this.SWEEP_DURATION) * Math.PI * 2;
+            if (this.sweepAngle > Math.PI * 2) this.sweepAngle -= Math.PI * 2;
+            this.renderRadar();
+            requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
     }
 
     initTabs() {
@@ -294,6 +311,35 @@ class BLEScanner {
         this.ctx.moveTo(cx, cy - maxR);
         this.ctx.lineTo(cx, cy + maxR);
         this.ctx.stroke();
+
+        // Radar sweep
+        const sweepArcLength = Math.PI / 2; // 90 degree trailing arc
+        this.ctx.save();
+
+        // Draw trailing arc with fading opacity
+        const steps = 40;
+        for (let i = 0; i < steps; i++) {
+            const t = i / steps;
+            const startAngle = this.sweepAngle - sweepArcLength * (1 - t);
+            const endAngle = this.sweepAngle - sweepArcLength * (1 - (i + 1) / steps);
+            const alpha = t * 0.25;
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(cx, cy);
+            this.ctx.arc(cx, cy, maxR, startAngle, endAngle);
+            this.ctx.closePath();
+            this.ctx.fillStyle = `rgba(0, 212, 255, ${alpha})`;
+            this.ctx.fill();
+        }
+
+        // Leading edge line
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy);
+        this.ctx.lineTo(cx + Math.cos(this.sweepAngle) * maxR, cy + Math.sin(this.sweepAngle) * maxR);
+        this.ctx.strokeStyle = 'rgba(0, 212, 255, 0.9)';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+        this.ctx.restore();
 
         // Draw devices
         const devices = Array.from(this.devices.values());
